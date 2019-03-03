@@ -1,6 +1,7 @@
 build/
 .idea/
 __pycache__/
+dist/
 *.swp
 *.swo
 *.pyc
