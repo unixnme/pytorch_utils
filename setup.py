@@ -10,5 +10,6 @@ setup(
     description='Useful utilities for training with Pytorch.',
     install_requires=[
         "torch >= 0.4",
+        "matplotlib >= 3.0.0"
     ],
 )
