@@ -1,6 +1,7 @@
 build/
 .idea/
 __pycache__/
+pytorch_utils.egg-info/
 dist/
 *.swp
 *.swo
