@@ -15,3 +15,8 @@ class LoggerTest(unittest.TestCase):
             self.logger.record('val_acc', epoch)
             self.logger.record('val_loss', 1. / (epoch + 1))
         self.logger.plot()
+        self.logger.save('log.txt')
+
+    def test_load(self):
+        logger = Logger.load('log.txt')
+        logger.plot()

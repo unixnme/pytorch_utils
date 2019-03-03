@@ -8,6 +8,7 @@ class Logger(object):
     def __init__(self, keys:list, desc:str=None):
         assert len(keys) >= 1, "must have at least one key to save"
         for key in keys: assert isinstance(key, str), "each key must be a string"
+        for key in keys: assert len(key.split()) == 1 and key.split()[0] == key
         assert len(np.unique(keys)) == len(keys), "each key must be unique"
         self.keys = keys
         self.desc = desc
@@ -58,17 +59,39 @@ class Logger(object):
         plt.legend(keys)
         plt.show()
 
-    def save(self, filename):
+    def save(self, filename:str):
         '''
         save the logger result as a text file
         '''
-        pass
+        text = "%d" % self.iteration
+        for key in self.keys: text += ' %s' % key
+        for row in self.table:
+            text += "\n%d" % row[0]
+            for key in self.keys: text += ' %f' % row[key]
+        with open(filename, 'w') as f:
+            f.write(text)
+
+    @staticmethod
+    def load(filename:str) -> 'Logger':
+        with open(filename, 'r') as f:
+            lines = f.read().split('\n')
+        keys = lines[0].split()
+        logger = Logger(keys[1:])
+        logger.iteration = int(keys[0])
+        logger.table = np.empty((len(lines)-1,), dtype=logger.dt)
+        for i,line in enumerate(lines[1:]):
+            values = line.split()
+            logger.table[i]['iter'] = int(values[0])
+            for j,key in enumerate(keys[1:]):
+                logger.table[i][key] = np.float64(values[j+1])
+
+        return logger
 
     def dtype(self) -> np.dtype:
         '''
         return numpy datatype suitable for the keys
         '''
-        types = [('iter', np.int)]
+        types = [('iter', np.int64)]
         for key in self.keys:
             types.append((key, np.float64))
         return np.dtype(types)
