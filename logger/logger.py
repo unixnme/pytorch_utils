@@ -1,33 +1,54 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os.path as osp
 
 class Logger(object):
     '''
     logs train/val results, such as loss or accuracy at each iteration
     '''
-    def __init__(self, keys:list, desc:str=None):
+    def __init__(self, keys:list, filename:str='result.log', desc:str=None):
         assert len(keys) >= 1, "must have at least one key to save"
         for key in keys: assert isinstance(key, str), "each key must be a string"
         for key in keys: assert len(key.split()) == 1 and key.split()[0] == key
         assert len(np.unique(keys)) == len(keys), "each key must be unique"
+        assert not osp.exists(filename), '%s already exists'
+        self.file = open(filename, 'w')
         self.keys = keys
+        self._save_keys()
         self.desc = desc
-        self.dt = self.dtype()
+        self.dt = self.dtype(self.keys)
         self.iteration = 0
-        self.new_row = np.ones((1,), dtype=self.dt)
-        for key in self.keys: self.new_row[key] = np.nan
-        self.table = self.new_row.copy()
+        self.filename = filename
+        self.empty_row = np.ones((1,), dtype=self.dt)
+        for key in self.keys: self.empty_row[key] = np.nan
+        self.table = self.empty_row.copy()
         self.table[0]['iter'] = self.iteration
+
+    def __del__(self):
+        if not self._last_row_empty():
+            self._save_last_row()
+        self.file.close()
+
+    def _save_keys(self):
+        for key in self.keys:
+            self.file.write(key + ' ')
 
     def increment_iteration(self, inc:int=1):
         '''
         increment the iteration by INC
+        write out the current result
         '''
         assert inc >= 1 and isinstance(inc, int)
         self.iteration += inc
         if not self._last_row_empty():
-            self.table = np.concatenate([self.table, self.new_row])
+            self._save_last_row()
+            self.table = np.concatenate([self.table, self.empty_row])
         self.table[-1]['iter'] = self.iteration
+
+    def _save_last_row(self):
+        text = "\n%d" % self.table[-1]['iter']
+        for key in self.keys: text += ' %f' % self.table[-1][key]
+        self.file.write(text)
 
     def _last_row_empty(self):
         for key in self.keys:
@@ -44,16 +65,21 @@ class Logger(object):
 
         self.table[-1][key] = val
 
-    def plot(self, keys:list=None, logy=False):
+    @staticmethod
+    def plot(table:np.ndarray, keys:list=None, logy=False):
         '''
-        plot those keys specified
+        plot the table with specified keys
+        if no keys are given, all keys are plotted
         '''
         plot = plt.semilogy if logy else plt.plot
-        if not keys: keys = self.keys
+        all_keys = list(table.dtype.fields)
+        if not keys: keys = all_keys
+        else:
+            for key in keys: assert key in all_keys
         for key in keys:
-            y = self.table[key]
+            y = table[key]
             idx = ~np.isnan(y)
-            x = self.table['iter'][idx]
+            x = table['iter'][idx]
             y = y[idx]
             plot(x,y)
         plt.legend(keys)
@@ -61,6 +87,7 @@ class Logger(object):
 
     def save(self, filename:str):
         '''
+        DEPRECATED
         save the logger result as a text file
         '''
         text = "%d" % self.iteration
@@ -71,28 +98,38 @@ class Logger(object):
         with open(filename, 'w') as f:
             f.write(text)
 
-    @staticmethod
-    def load(filename:str) -> 'Logger':
+    @classmethod
+    def load(cls, filename:str) -> np.ndarray:
+        '''
+        loads the data array
+        log file should look like
+
+        key1 key2 key3 ...
+        iter# key1_val key2_val key3_val ...
+        iter# key1_val key2_val key3_val ...
+        .
+        .
+        .
+
+        '''
         with open(filename, 'r') as f:
             lines = f.read().split('\n')
         keys = lines[0].split()
-        logger = Logger(keys[1:])
-        logger.iteration = int(keys[0])
-        logger.table = np.empty((len(lines)-1,), dtype=logger.dt)
+        table = np.empty((len(lines)-1,), dtype=cls.dtype(keys))
         for i,line in enumerate(lines[1:]):
             values = line.split()
-            logger.table[i]['iter'] = int(values[0])
-            for j,key in enumerate(keys[1:]):
-                logger.table[i][key] = np.float64(values[j+1])
+            table[i]['iter'] = int(values[0])
+            for j,key in enumerate(keys):
+                table[i][key] = np.float64(values[j+1])
+        return table
 
-        return logger
-
-    def dtype(self) -> np.dtype:
+    @staticmethod
+    def dtype(keys:list) -> np.dtype:
         '''
         return numpy datatype suitable for the keys
         '''
         types = [('iter', np.int64)]
-        for key in self.keys:
+        for key in keys:
             types.append((key, np.float64))
         return np.dtype(types)
 
@@ -104,6 +141,6 @@ if __name__ == '__main__':
     parser.add_argument('--logy', action='store_true', help='plot in logy scale')
     args = parser.parse_args()
 
-    logger = Logger.load(args.logfile)
-    logger.plot(logy=args.logy)
+    table = Logger.load(args.logfile)
+    Logger.plot(table, logy=args.logy)
 
