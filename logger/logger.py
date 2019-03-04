@@ -12,7 +12,7 @@ class Logger(object):
         for key in keys: assert len(key.split()) == 1 and key.split()[0] == key
         assert len(np.unique(keys)) == len(keys), "each key must be unique"
         assert not osp.exists(filename), '%s already exists'
-        self.file = open(filename, 'w')
+        self.file = open(filename, 'w', buffering=1)
         self.keys = keys
         self._save_keys()
         self.desc = desc
