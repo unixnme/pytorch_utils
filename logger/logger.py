@@ -133,14 +133,3 @@ class Logger(object):
             types.append((key, np.float64))
         return np.dtype(types)
 
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser('Logger script')
-    parser.add_argument('logfile', type=str, help='log file path to plot')
-    parser.add_argument('--logy', action='store_true', help='plot in logy scale')
-    args = parser.parse_args()
-
-    table = Logger.load(args.logfile)
-    Logger.plot(table, logy=args.logy)
-
