@@ -8,6 +8,6 @@ def plot():
     args = parser.parse_args()
 
     table = Logger.load(args.logfile)
-    Logger.plot(table, logy=args.logy)
+    Logger.plot(table, title=args.logfile, logy=args.logy)
 
 plot()

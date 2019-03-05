@@ -66,24 +66,25 @@ class Logger(object):
         self.table[-1][key] = val
 
     @staticmethod
-    def plot(table:np.ndarray, keys:list=None, logy=False):
+    def plot(table:np.ndarray, keys:list=None, title:str='', logy=False):
         '''
         plot the table with specified keys
         if no keys are given, all keys are plotted
         '''
         plot = plt.semilogy if logy else plt.plot
         all_keys = list(table.dtype.fields)
+        all_keys.remove('iter')
         if not keys: keys = all_keys
         else:
             for key in keys: assert key in all_keys
         for key in keys:
-            if key == 'iter': continue
             y = table[key]
             idx = ~np.isnan(y)
             x = table['iter'][idx]
             y = y[idx]
             plot(x,y)
         plt.legend(keys)
+        plt.title(title)
         plt.show()
 
     def save(self, filename:str):
