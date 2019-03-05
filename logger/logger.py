@@ -77,6 +77,7 @@ class Logger(object):
         else:
             for key in keys: assert key in all_keys
         for key in keys:
+            if key == 'iter': continue
             y = table[key]
             idx = ~np.isnan(y)
             x = table['iter'][idx]
@@ -114,10 +115,17 @@ class Logger(object):
         '''
         with open(filename, 'r') as f:
             lines = f.read().split('\n')
+        # remove empty lines
+        while True:
+            if lines[-1].split():
+                break
+            lines = lines[:-1]
+            
         keys = lines[0].split()
         table = np.empty((len(lines)-1,), dtype=cls.dtype(keys))
         for i,line in enumerate(lines[1:]):
             values = line.split()
+            if not values: break
             table[i]['iter'] = int(values[0])
             for j,key in enumerate(keys):
                 table[i][key] = np.float64(values[j+1])
