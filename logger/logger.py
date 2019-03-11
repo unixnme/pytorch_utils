@@ -61,7 +61,7 @@ class Logger(object):
         record {KEY:VAL} at the current iteration
         '''
         assert key in self.keys
-        assert isinstance(val, (int, float)) and val == val
+        assert isinstance(val, (int, float)) and val == val, (str(val) + ' must be a finite number')
 
         self.table[-1][key] = val
 
